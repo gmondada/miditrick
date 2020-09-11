@@ -1,0 +1,17 @@
+#!/bin/bash
+
+case $0 in
+/*)     D=`dirname $0`;;
+*/*)    D=$PWD/`dirname $0`;;
+*)      D=$PWD;;
+esac
+
+set -e # stop on error
+
+CFLAGS="-DLINUX"
+
+cd "$D"
+gcc $CFLAGS -c gmidi.c
+gcc $CFLAGS -c miditrick.c
+gcc -o miditrick gmidi.o miditrick.o -lpthread -lrt
+rm *.o
