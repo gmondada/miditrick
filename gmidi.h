@@ -3,13 +3,14 @@
 #define _GMIDI_H_
 
 typedef int GMIDI_DEV;
+typedef struct gmidi_msg GMIDI_MSG;
 
-typedef struct {
+struct gmidi_msg {
     int size;
     union {
 	    char bytes[3];
 	};
-} GMIDI_MSG;
+};
 
 #define GMIDI_EOPEN -1100
 //#define GMIDI_EEOF -1101
