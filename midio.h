@@ -12,8 +12,8 @@ struct midio_msg {
     int port; // -1 == all ports
     int size;
     union {
-	    char bytes[3];
-	};
+        char bytes[3];
+    };
 };
 
 struct midio {
