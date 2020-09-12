@@ -4,24 +4,25 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-#include "gmidi.h"
+#include "midio.h"
 
 
-void beep(GMIDI_DEV *out, int note)
+void beep(MIDIO *out, int note)
 {
-    GMIDI_MSG msg;
-    msg.size = 3;
-    msg.bytes[0] = 0x90;
-    msg.bytes[1] = note;
-    msg.bytes[2] = 0x20;
-    gmidi_put(out, &msg, 1000);
+    MIDIO_MSG msg = {
+		.port = -1,
+	    .size = 3,
+		.bytes = {0x90, note, 0x20},
+	};
+    midio_send(out, &msg);
     usleep(10 * 1000);  // 0.1 s
     msg.bytes[2] = 0x00;
-    gmidi_put(out, &msg, 1000);
+    midio_send(out, &msg);
 }
 
-void scale(GMIDI_DEV *out)
+void scale(MIDIO *out)
 {
     int i;
     for (i=0; i<12 ;i++) {
@@ -29,29 +30,27 @@ void scale(GMIDI_DEV *out)
     }
 }
 
-void send_note_off(GMIDI_DEV *out, int note)
+void send_note_off(MIDIO *out, int note)
 {
-	GMIDI_MSG msg = { 3 };
-	int err;
+	MIDIO_MSG msg = {
+		.port = -1,
+		.size = 3,
+	};
 
 	msg.bytes[0] = 0x90;
 	msg.bytes[1] = (char)(note & 0x7F);
-	err = gmidi_put(out, &msg, 1000);
-	if (err) {
-		printf("error %d\n", err);
-		exit(1);
-	}
+	midio_send(out, &msg);
 }
 
 int main(char *argv, int argc)
 {
-
-	GMIDI_DEV in, out;
-	GMIDI_MSG msg;
+	MIDIO *midio;
+	MIDIO_MSG msg;
 	int err;
 	bool console = false;
 	int shift = 0;
 	int exit_count = 0;
+	int beatstep_port = -1;
 
 	/**
 	 * Array containing the state of the forwarded notes, i.e. the state of
@@ -66,23 +65,18 @@ int main(char *argv, int argc)
 	 * Array containing the state of the forwarded notes, i.e. the state of
 	 * notes as seen by the synthetiser connected to the output.
 	 * The array index is the untransposed note.
-	 * The array content is the transposed note as it hab been sent to
+	 * The array content is the transposed note as it has been sent to
 	 * the synthetiser.
 	 */
 	char fwd_note[128] = {0};
 
-	err = gmidi_open_in_dev(&in, 0);
-	if (err) {
-		printf("error %d\n", err);
-		exit(1);
-	}
-	err = gmidi_open_out_dev(&out, 0);
-	if (err) {
-		printf("error %d\n", err);
-		exit(1);
-	}
+	midio = midio_create();
+	midio_open(midio);
 
-	while(1) {
+	beatstep_port = midio_get_port_by_name(midio, "BeatStep");
+	printf("BeatStep port=%d\n", beatstep_port);
+
+	for (;;) {
 	    int cmd;   // midi command
 		int note;  // when cmd = 8 or 9
 		int vel;   // when cmd = 9
@@ -92,11 +86,10 @@ int main(char *argv, int argc)
 		int fnote; // forwarded (transposed) note
 
 		// get next midi message
-		err = gmidi_get(&in, &msg, 1000);
-		if (err) {
-			printf("error %d\n", err);
-			exit(1);
-		}
+		midio_recv(midio, &msg);
+		if (msg.size == 0)
+			continue;
+
 		cmd = (msg.bytes[0] >> 4) & 0x0F;
 		note = msg.bytes[1] & 0x7F;
 		vel = msg.bytes[2];
@@ -151,7 +144,7 @@ int main(char *argv, int argc)
 			if (rel_note == -12) {
 				exit_count++;
 				if (exit_count >= 5) {
-					scale(&out);
+					scale(midio);
 					exit(2); // exit and halt
 				}
 			}
@@ -192,13 +185,13 @@ int main(char *argv, int argc)
 
 		// forward
 		if (fwd) {
+			if (msg.port == beatstep_port)
+				msg.port = -1;
+
 		    // send midi command out
-    		err = gmidi_put(&out, &msg, 1000);
-    		if (err) {
-    			printf("error %d\n", err);
-    			exit(1);
-    		}
-			// gmidi_show_msg(&msg);
+    		midio_send(midio, &msg);
+
+			// midio_print_msg(&msg);
 		}
 	}
 

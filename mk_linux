@@ -8,10 +8,10 @@ esac
 
 set -e # stop on error
 
-CFLAGS="-DLINUX"
+CFLAGS="-DLINUX -std=c99 -D_BSD_SOURCE"
 
 cd "$D"
-gcc $CFLAGS -c gmidi.c
+gcc $CFLAGS -c midio.c
 gcc $CFLAGS -c miditrick.c
-gcc -o miditrick gmidi.o miditrick.o -lpthread -lrt
+gcc -o miditrick midio.o miditrick.o -lpthread -lrt
 rm *.o
