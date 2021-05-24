@@ -138,7 +138,7 @@ void midio_open(MIDIO *me)
 
         const MIDIEventPacket *packet = eventList->packet;
 
-        for (int i=0; i<eventList->numPackets; i++) {
+        for (int i = 0; i < eventList->numPackets; i++) {
             if (packet->wordCount >= 1 && (packet->words[0] >> 24) == 0x20) {
                 UInt32 word = packet->words[0];
                 MIDIO_MSG msg = {
@@ -258,7 +258,7 @@ void midio_start_pump(MIDIO *me, void *ctx, void (* handler)(void *ctx, MIDIO_MS
     priv->recv_handler = handler;
     priv->recv_handler_ctx = ctx;
 
-    for (int i=0; i<priv->port_count; i++) {
+    for (int i = 0; i < priv->port_count; i++) {
         struct midio_port *port = &priv->ports[i];
 
         if (port->inputPort) {
@@ -313,7 +313,7 @@ void midio_send(MIDIO *me, MIDIO_MSG *msg)
     struct midio_private *priv = (struct midio_private *)me;
 
     if (msg->port == -1) {
-        for (int i=0; i<priv->port_count; i++) {
+        for (int i = 0; i < priv->port_count; i++) {
             struct midio_port *port = &priv->ports[i];
             _send(port, msg);
         }
