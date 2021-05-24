@@ -29,6 +29,7 @@ MIDIO *midio_create(void);
 void midio_open(MIDIO *me);
 void midio_close(MIDIO *me);
 int midio_get_port_by_name(MIDIO *me, const char *name);
+void midio_start_pump(MIDIO *me, void *ctx, void (* handler)(void *ctx, MIDIO_MSG *msg));
 void midio_recv(MIDIO *me, MIDIO_MSG *msg);
 void midio_send(MIDIO *me, MIDIO_MSG *msg);
 void midio_print_msg(MIDIO_MSG *msg);

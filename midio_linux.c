@@ -105,6 +105,19 @@ int midio_get_port_by_name(MIDIO *me, const char *name)
     return -1;
 }
 
+void midio_start_pump(MIDIO *me, void *ctx, void (* handler)(void *ctx, MIDIO_MSG *msg))
+{
+    MIDIO_MSG msg;
+
+    for (;;) {
+        // get next midi message
+        midio_recv(me, &msg);
+        if (msg.size == 0)
+            continue;
+        handler(ctx, &msg);
+    }
+}
+
 void midio_recv(MIDIO *me, MIDIO_MSG *msg) {
 
     for (int i = 0; i < me->dev_count; i++)
