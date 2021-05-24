@@ -3,6 +3,7 @@
 #define _MIDIO_H_
 
 #include <poll.h>
+#include <stdint.h>
 
 
 typedef struct midio MIDIO;
@@ -13,6 +14,7 @@ struct midio_msg {
     int size;
     union {
         char bytes[3];
+        uint8_t u8[3];
     };
 };
 
