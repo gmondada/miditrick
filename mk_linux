@@ -11,7 +11,8 @@ set -e # stop on error
 CFLAGS="-DLINUX -std=c99 -D_BSD_SOURCE"
 
 cd "$D"
-gcc $CFLAGS -c midio.c
-gcc $CFLAGS -c miditrick.c
-gcc -o miditrick midio.o miditrick.o -lpthread -lrt
+gcc $CFLAGS -c midio_linux.c
+gcc $CFLAGS -c mproc.c
+gcc $CFLAGS -c main.c
+gcc -o miditrick midio_linux.o mproc.o main.o -lpthread -lrt
 rm *.o
