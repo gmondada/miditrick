@@ -10,6 +10,12 @@
 #include <CoreMIDI/CoreMIDI.h>
 
 
+/*** literals ***/
+
+#define _FATAL(format, ...) \
+    do { _fatal("midio: fatal error (%s:%d): " format, __FILE__, __LINE__, ##__VA_ARGS__); } while(0)
+
+
 /*** types ***/
 
 struct midio_port {
@@ -42,7 +48,7 @@ struct midio_private {
 
 /*** functions ***/
 
-static void _fatal_error(const char *format, ...)
+static void _fatal(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -107,23 +113,23 @@ void midio_open(MIDIO *me)
 
     result = MIDIClientCreate(CFSTR("MIDI client GMO"), NULL, NULL, &midiClient);
     if (result != noErr)
-        _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+        _FATAL("result=%d", result);
 
     result = MIDISourceCreateWithProtocol(midiClient, CFSTR("Miditrick"), kMIDIProtocol_1_0, &outputEndpoint);
     if (result != noErr)
-        _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+        _FATAL("result=%d", result);
 
     SInt32 outputId = 0;
     result = MIDIObjectGetIntegerProperty(outputEndpoint, kMIDIPropertyUniqueID, &outputId);
     if (result != noErr)
-        _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+        _FATAL("result=%d", result);
 
     // TODO: store it persistently
     outputId = 'MTRK';
 
     result = MIDIObjectSetIntegerProperty(outputEndpoint, kMIDIPropertyUniqueID, outputId);
     if (result != noErr)
-        _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+        _FATAL("result=%d", result);
 
     struct midio_port *output_port = _add_port(me);
     strlcpy(output_port->name, "Virtual Output", sizeof(output_port->name));
@@ -170,7 +176,7 @@ void midio_open(MIDIO *me)
             CFStringRef entityName = NULL;
             result = MIDIObjectGetStringProperty(entity, kMIDIPropertyName, &entityName);
             if (result != noErr)
-                _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+                _FATAL("result=%d", result);
             ItemCount numOfSources = MIDIEntityGetNumberOfSources(entity);
             for (ItemCount sourceIndex = 0; sourceIndex < numOfSources; sourceIndex++) {
                 MIDIEndpointRef endpoint = MIDIEntityGetSource(entity, sourceIndex);
@@ -186,7 +192,7 @@ void midio_open(MIDIO *me)
                     CFStringRef endpointName = NULL;
                     result = MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &endpointName);
                     if (result != noErr)
-                        _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+                        _FATAL("result=%d", result);
                     name = CFStringCreateWithFormat(NULL, NULL, CFSTR("%@: %@"), entityName, endpointName);
                 }
 
@@ -212,7 +218,7 @@ void midio_open(MIDIO *me)
                     CFStringRef endpointName = NULL;
                     result = MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &endpointName);
                     if (result != noErr)
-                        _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+                        _FATAL("result=%d", result);
                     name = CFStringCreateWithFormat(NULL, NULL, CFSTR("%@: %@"), entityName, endpointName);
                 }
 
@@ -231,7 +237,7 @@ void midio_open(MIDIO *me)
 
                 result = MIDIOutputPortCreate(midiClient, CFSTR("Output"), &outputPort);
                 if (result != noErr)
-                    _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+                    _FATAL("result=%d", result);
 
                 output_port->outputEndpoint = endpoint;
                 output_port->outputPort = outputPort;
@@ -264,7 +270,7 @@ void midio_start_pump(MIDIO *me, void *ctx, void (* handler)(void *ctx, MIDIO_MS
         if (port->inputPort) {
             OSStatus result = MIDIPortConnectSource(port->inputPort, port->inputEndpoint, port);
             if (result != noErr)
-                _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+                _FATAL("result=%d", result);
         }
     }
 }
@@ -293,19 +299,19 @@ static void _send(struct midio_port *port, MIDIO_MSG *msg)
     if (port->outputPort) {
         OSStatus result = MIDISendEventList(port->outputPort, port->outputEndpoint, &eventList);
         if (result != noErr)
-            _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+            _FATAL("result=%d", result);
     }
 
     if (port->virtualOutputEndpoint) {
         OSStatus result = MIDIReceivedEventList(port->virtualOutputEndpoint, &eventList);
         if (result != noErr)
-            _fatal_error("%s(%d): error=%d", __FILE__, __LINE__, result);
+            _FATAL("result=%d", result);
     }
 }
 
 void midio_recv(MIDIO *me, MIDIO_MSG *msg)
 {
-    _fatal_error("%s(%d): not implemented", __FILE__, __LINE__);
+    _FATAL("not implemented");
 }
 
 void midio_send(MIDIO *me, MIDIO_MSG *msg)
