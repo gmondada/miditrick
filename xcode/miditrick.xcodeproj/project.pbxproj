@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E0D94479265ABCA80025CC44 /* miditrick.c in Sources */ = {isa = PBXBuildFile; fileRef = E0D94475265AB76D0025CC44 /* miditrick.c */; };
+		E0D94479265ABCA80025CC44 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = E0D94475265AB76D0025CC44 /* main.c */; };
 		E0F1D6A6265AEDEE00CB3F2A /* mproc.c in Sources */ = {isa = PBXBuildFile; fileRef = E0F1D6A5265AEDEE00CB3F2A /* mproc.c */; };
 		E0F1D6A8265AF17A00CB3F2A /* midio.c in Sources */ = {isa = PBXBuildFile; fileRef = E0F1D6A7265AF17900CB3F2A /* midio.c */; };
 		E0F1D6AA265BB1D000CB3F2A /* midio_apl.c in Sources */ = {isa = PBXBuildFile; fileRef = E0D94473265AB7140025CC44 /* midio_apl.c */; };
@@ -29,7 +29,7 @@
 		E0AAA188265A756900F03D04 /* miditrick */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = miditrick; sourceTree = BUILT_PRODUCTS_DIR; };
 		E0D94471265A75AB0025CC44 /* midio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midio.h; path = ../../midio.h; sourceTree = "<group>"; };
 		E0D94473265AB7140025CC44 /* midio_apl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = midio_apl.c; path = ../../midio_apl.c; sourceTree = "<group>"; };
-		E0D94475265AB76D0025CC44 /* miditrick.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = miditrick.c; path = ../../miditrick.c; sourceTree = "<group>"; };
+		E0D94475265AB76D0025CC44 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = ../../main.c; sourceTree = "<group>"; };
 		E0D94477265AB7A40025CC44 /* midio_linux.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midio_linux.c; path = ../../midio_linux.c; sourceTree = "<group>"; };
 		E0F1D6A4265AEDEE00CB3F2A /* mproc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = mproc.h; path = ../../mproc.h; sourceTree = "<group>"; };
 		E0F1D6A5265AEDEE00CB3F2A /* mproc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = mproc.c; path = ../../mproc.c; sourceTree = "<group>"; };
@@ -72,7 +72,7 @@
 				E0D94473265AB7140025CC44 /* midio_apl.c */,
 				E0F1D6A4265AEDEE00CB3F2A /* mproc.h */,
 				E0F1D6A5265AEDEE00CB3F2A /* mproc.c */,
-				E0D94475265AB76D0025CC44 /* miditrick.c */,
+				E0D94475265AB76D0025CC44 /* main.c */,
 			);
 			path = miditrick;
 			sourceTree = "<group>";
@@ -134,7 +134,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E0F1D6A6265AEDEE00CB3F2A /* mproc.c in Sources */,
-				E0D94479265ABCA80025CC44 /* miditrick.c in Sources */,
+				E0D94479265ABCA80025CC44 /* main.c in Sources */,
 				E0F1D6AA265BB1D000CB3F2A /* midio_apl.c in Sources */,
 				E0F1D6A8265AF17A00CB3F2A /* midio.c in Sources */,
 			);

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+case $0 in
+/*)     D=`dirname $0`;;
+*/*)    D=$PWD/`dirname $0`;;
+*)      D=$PWD;;
+esac
+
+set -e # stop on error
+
+CFLAGS="-std=c11"
+
+cd "$D"
+clang $CFLAGS -c midio.c
+clang $CFLAGS -c midio_apl.c
+clang $CFLAGS -c mproc.c
+clang $CFLAGS -c main.c
+clang -o miditrick midio.o midio_apl.o mproc.o main.o -framework Foundation -framework CoreMIDI
+rm *.o
