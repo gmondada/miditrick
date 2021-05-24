@@ -8,9 +8,24 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
-
+#include <poll.h>
 #include "midio.h"
 
+
+/*** types ***/
+
+struct midio_private {
+    struct midio public;
+
+    int dev_count;
+    int devs[16];
+    char names[16][32];
+
+    struct pollfd pollfds[16];
+};
+
+
+/*** functions ***/
 
 static size_t _strlcpy(char *dst, const char *src, size_t siz)
 {
@@ -54,6 +69,8 @@ MIDIO *midio_create(void)
 
 void midio_open(MIDIO *me)
 {
+    struct midio_private *priv = (struct midio_private *)me;
+
     for (int i = 0; i < 4; i++) {
         char fn[256];
         snprintf(fn, sizeof(fn), "/dev/snd/midiC%dD0", i);
@@ -80,26 +97,30 @@ void midio_open(MIDIO *me)
 
             printf("midio: open device %s (%s)\n", fn, id);
 
-            me->devs[me->dev_count] = fd;
-            me->pollfds[me->dev_count].fd = fd;
-            me->pollfds[me->dev_count].events = POLLIN;
-            _strlcpy(me->names[i], id, sizeof(me->names[i]));
-            me->dev_count++;
+            priv->devs[priv->dev_count] = fd;
+            priv->pollfds[priv->dev_count].fd = fd;
+            priv->pollfds[priv->dev_count].events = POLLIN;
+            _strlcpy(priv->names[i], id, sizeof(priv->names[i]));
+            priv->dev_count++;
         }
     }
 }
 
 void midio_close(MIDIO *me)
 {
-    for (int i = 0; i < me->dev_count; i++)
-        close(me->devs[i]);
-    me->dev_count = 0;
+    struct midio_private *priv = (struct midio_private *)me;
+
+    for (int i = 0; i < priv->dev_count; i++)
+        close(priv->devs[i]);
+    priv->dev_count = 0;
 }
 
 int midio_get_port_by_name(MIDIO *me, const char *name)
 {
-    for (int i = 0; i < me->dev_count; i++) {
-        if (!strcmp(me->names[i], name))
+    struct midio_private *priv = (struct midio_private *)me;
+
+    for (int i = 0; i < priv->dev_count; i++) {
+        if (!strcmp(priv->names[i], name))
             return i;
     }
     return -1;
@@ -114,34 +135,38 @@ void midio_start_pump(MIDIO *me, void *ctx, void (* handler)(void *ctx, MIDIO_MS
         midio_recv(me, &msg);
         if (msg.size == 0)
             continue;
+
+        // dispatch the message
         handler(ctx, &msg);
     }
 }
 
-void midio_recv(MIDIO *me, MIDIO_MSG *msg) {
+void midio_recv(MIDIO *me, MIDIO_MSG *msg)
+{
+    struct midio_private *priv = (struct midio_private *)me;
 
-    for (int i = 0; i < me->dev_count; i++)
-        me->pollfds[i].revents = 0;
+    for (int i = 0; i < priv->dev_count; i++)
+        priv->pollfds[i].revents = 0;
 
     do_poll:;
-    int rv = poll(me->pollfds, me->dev_count, -1);
+    int rv = poll(priv->pollfds, priv->dev_count, -1);
     if (rv == -1) {
         if (errno == EINTR)
             goto do_poll;
         _fatal_error("poll error: errno=%d", errno);
     }
 
-    for (int i = 0; i < me->dev_count; i++) {
-        if (me->pollfds[i].revents) {
+    for (int i = 0; i < priv->dev_count; i++) {
+        if (priv->pollfds[i].revents) {
             do_read:;
-            int rx = read(me->devs[i], msg->bytes, 3);
+            ssize_t rx = read(priv->devs[i], msg->bytes, 3);
             if (rx == -1) {
                 if (errno == EINTR)
                     goto do_read;
                 _fatal_error("read error: errno=%d", errno);
             }
             msg->port = i;
-            msg->size = rx;
+            msg->size = (int)rx;
             return;
         }
     }
@@ -150,15 +175,18 @@ void midio_recv(MIDIO *me, MIDIO_MSG *msg) {
     msg->size = 0;
 }
 
-void midio_send(MIDIO *me, MIDIO_MSG *msg) {
+void midio_send(MIDIO *me, MIDIO_MSG *msg)
+{
+    struct midio_private *priv = (struct midio_private *)me;
+
     if (msg->port == -1) {
-        for (int i = 0; i < me->dev_count; i++) {
-            int ret = write(me->devs[i], msg->bytes, msg->size);
+        for (int i = 0; i < priv->dev_count; i++) {
+            ssize_t ret = write(priv->devs[i], msg->bytes, msg->size);
             if (ret != msg->size)
                 _fatal_error("write error: ret=%d errno=%d", ret, errno);
         }
     } else {
-        int ret = write(me->devs[msg->port], msg->bytes, msg->size);
+        ssize_t ret = write(priv->devs[msg->port], msg->bytes, msg->size);
         if (ret != msg->size)
             _fatal_error("write error: ret=%d errno=%d", ret, errno);
     }

@@ -2,9 +2,10 @@
 #ifndef _MIDIO_H_
 #define _MIDIO_H_
 
-#include <poll.h>
 #include <stdint.h>
 
+
+/*** types ***/
 
 typedef struct midio MIDIO;
 typedef struct midio_msg MIDIO_MSG;
@@ -19,13 +20,10 @@ struct midio_msg {
 };
 
 struct midio {
-    int dev_count;
-    int devs[16];
-    char names[16][32];
-
-    struct pollfd pollfds[16];
 };
 
+
+/*** prototypes ***/
 
 MIDIO *midio_create(void);
 void midio_open(MIDIO *me);
