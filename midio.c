@@ -1,8 +1,9 @@
 //
 //  midio.c
-//  miditrick
 //
 //  Created by Gabriele Mondada on 23.05.21.
+//  Copyright (c) 2021 Gabriele Mondada.
+//  Distributed under the terms of the MIT License.
 //
 
 #include <stdio.h>

@@ -1,3 +1,10 @@
+//
+//  midio.c
+//
+//  Created by Gabriele Mondada on 23.05.21.
+//  Copyright (c) 2021 Gabriele Mondada.
+//  Distributed under the terms of the MIT License.
+//
 
 #ifndef _MIDIO_H_
 #define _MIDIO_H_
@@ -32,6 +39,7 @@ int midio_get_port_by_name(MIDIO *me, const char *name);
 void midio_start_pump(MIDIO *me, void *ctx, void (* handler)(void *ctx, MIDIO_MSG *msg));
 void midio_recv(MIDIO *me, MIDIO_MSG *msg);
 void midio_send(MIDIO *me, MIDIO_MSG *msg);
+void midio_send_sysex(MIDIO *me, int port, const void *data, size_t size);
 void midio_print_msg(MIDIO_MSG *msg);
 
 
