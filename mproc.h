@@ -17,6 +17,7 @@ typedef struct mproc MPROC;
 struct mproc {
     MIDIO *midio;
 
+    int ui_mode;
     bool console;
     int shift;
     int exit_count;

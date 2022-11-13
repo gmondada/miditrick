@@ -14,6 +14,9 @@
 #include <string.h>
 
 
+#define GMU_ASYM_MOD(n, d) (((n)<0) ? ((d)-1+((n)+1)%(d)) : ((n)%(d)))
+
+
 static void _ding(MIDIO *out, int note)
 {
     MIDIO_MSG msg = {
@@ -35,17 +38,17 @@ static void _scale(MIDIO *out)
     }
 }
 
-static void _send_note_off(MIDIO *out, int note)
-{
-    MIDIO_MSG msg = {
-        .port = -1,
-        .size = 3,
-    };
-
-    msg.bytes[0] = 0x90;
-    msg.bytes[1] = (char)(note & 0x7F);
-    midio_send(out, &msg);
-}
+//static void _send_note_off(MIDIO *out, int note)
+//{
+//    MIDIO_MSG msg = {
+//        .port = -1,
+//        .size = 3,
+//    };
+//
+//    msg.bytes[0] = 0x90;
+//    msg.bytes[1] = (char)(note & 0x7F);
+//    midio_send(out, &msg);
+//}
 
 void mproc_init(MPROC *me, MIDIO *midio)
 {
@@ -59,11 +62,77 @@ void mproc_init(MPROC *me, MIDIO *midio)
     printf("Virtual Output: port=%d\n", me->virtual_port);
 }
 
+int beatstep_get_pad_index(int note)
+{
+    int key = note - 0x24;
+    int col = key % 8;
+    int row = key >= 8 ? 0 : 1;
+    return col + row * 8;
+}
+
+void beatstep_set_pad_color(MPROC *me, int pad_index, int color_index)
+{
+    /*
+     from: https://forum.arturia.com/index.php?topic=92480.0
+     from: https://www.untergeek.de/2014/11/taming-arturias-beatstep-sysex-codes-for-programming-via-ipad/
+
+     In order to change the Pad color send this SysEx message to "Arturia MiniLab mkII" MIDI output port
+      F0 00 20 6B 7F 42 02 00 10 7n cc F7
+
+     where:
+       n is the pad number, 0 to F, corresponding to Pad1 to Pad16
+       cc is the color:
+         00 - black
+         01 - red
+         04 - green
+         05 - yellow
+         10 - blue
+         11 - magenta
+         14 - cyan
+         7F - white
+    */
+
+    uint8_t buf[] = {0xF0, 0x00, 0x20, 0x6B, 0x7F, 0x42, 0x02, 0x00, 0x10, 0x70 + pad_index, color_index, 0xF7};
+    midio_send_sysex(me->midio, me->beatstep_port, buf, sizeof(buf));
+}
+
+void beatstep_update_ui(MPROC *me, int pad_index, bool down)
+{
+    if (me->ui_mode == 0) {
+        int shifts[] = {
+            1000, 1000, 1000, 1000, -3, -8, -1, -6,
+            1, -4, 3, -2, 5, 0, 7, 2
+        };
+        if (shifts[pad_index] != 1000 && down) {
+            me->shift = shifts[pad_index] - 12;
+        }
+        int key = 1000;
+        for (int i=0; i<sizeof(shifts); i++) {
+            if (shifts[i] == GMU_ASYM_MOD(me->shift, 12)) {
+                key = i;
+                break;
+            }
+        }
+        for (int i=0; i<16; i++) {
+            if (i == pad_index && down) {
+                // do nothing
+            } else if (i == key) {
+                beatstep_set_pad_color(me, i, 0x10);
+            } else {
+                beatstep_set_pad_color(me, i, 0);
+            }
+        }
+    }
+}
+
 void mproc_msg_handler(MPROC *me, MIDIO_MSG *msg_in)
 {
     MIDIO_MSG msg = *msg_in;
 
+    // midio_print_msg(&msg);
+
     int cmd;   // midi command
+    int channel;
     int note;  // when cmd = 8 or 9
     int vel;   // when cmd = 9
     bool note_on;
@@ -72,6 +141,7 @@ void mproc_msg_handler(MPROC *me, MIDIO_MSG *msg_in)
     int fnote; // forwarded (transposed) note
 
     cmd = (msg.bytes[0] >> 4) & 0x0F;
+    channel = msg.bytes[0] & 0x0F;
     note = msg.bytes[1] & 0x7F;
     vel = msg.bytes[2];
     note_on = ((cmd == 9) && (vel != 0));
@@ -79,6 +149,15 @@ void mproc_msg_handler(MPROC *me, MIDIO_MSG *msg_in)
 
     if (me->virtual_port >= 0 && msg.port == me->beatstep_port)
         fwd = false;
+
+    // beatstep control
+    if (msg.port == me->beatstep_port) {
+        if (note_on || note_off) {
+            int pad_index = beatstep_get_pad_index(note);
+            beatstep_update_ui(me, pad_index, note_on);
+            return;
+        }
+    }
 
     // changement du pedale de gauche ?
     if (cmd == 0xB && msg.bytes[1] == 0x43) {
