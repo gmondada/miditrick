@@ -1,7 +1,7 @@
 //
 //  midio.c
 //
-//  Created by Gabriele Mondada on 23.05.21.
+//  Created by Gabriele Mondada on May 23, 2021.
 //  Copyright (c) 2021 Gabriele Mondada.
 //  Distributed under the terms of the MIT License.
 //
@@ -33,6 +33,7 @@ struct midio {
 /*** prototypes ***/
 
 MIDIO *midio_create(void);
+void midio_destroy(MIDIO *me);
 void midio_open(MIDIO *me);
 void midio_close(MIDIO *me);
 int midio_get_port_by_name(MIDIO *me, const char *name);

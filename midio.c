@@ -1,7 +1,7 @@
 //
 //  midio.c
 //
-//  Created by Gabriele Mondada on 23.05.21.
+//  Created by Gabriele Mondada on May 23, 2021.
 //  Copyright (c) 2021 Gabriele Mondada.
 //  Distributed under the terms of the MIT License.
 //
