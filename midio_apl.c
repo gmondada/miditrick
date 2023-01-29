@@ -241,7 +241,7 @@ static void _add_virtual_output_port(MIDIO *me, const char *name, int fourcc)
     port->virtualOutputEndpoint = outputEndpoint;
 }
 
-static void _scan_for_pysical_ports(MIDIO *me)
+static void _scan_for_physical_ports(MIDIO *me)
 {
     OSStatus result;
 
@@ -345,6 +345,66 @@ static void _scan_for_pysical_ports(MIDIO *me)
     }
 }
 
+static void _scan_for_virtual_ports(MIDIO *me)
+{
+    struct midio_private *priv = (struct midio_private *)me;
+    OSStatus result;
+
+    ItemCount numOfSources = MIDIGetNumberOfSources();
+    for (ItemCount sourceIndex = 0; sourceIndex < numOfSources; sourceIndex++) {
+        MIDIEndpointRef sourceEndpoint = MIDIGetSource(sourceIndex);
+        printf("device %d:\n", (int)sourceIndex);
+        printf("  properties:\n");
+        _printObjectProperties(sourceEndpoint, "    ");
+
+        SInt32 entityId = 0;
+        result = MIDIObjectGetIntegerProperty(sourceEndpoint, kMIDIPropertyUniqueID, &entityId);
+        if (result != noErr)
+            continue;
+
+        int index = -1;
+        for (int i = 0; i < priv->port_count; i++) {
+            struct midio_port *port = priv->ports + i;
+            if (port->device_id == 0 && port->entity_id == entityId) {
+                index = i;
+                break;
+            }
+        }
+        if (index >= 0) {
+            struct midio_port *port = priv->ports + index;
+            if (port->virtualOutputEndpoint)
+                continue;
+            if (port->inputEndpoint != sourceEndpoint) {
+                port->inputEndpoint = sourceEndpoint;
+                // TODO: reconnect input (possible only once auto-detection will be implemented)
+                continue;
+            }
+        }
+
+        CFStringRef entityName = NULL;
+        CFPropertyListRef properties = NULL;
+        MIDIObjectGetProperties(sourceEndpoint, &properties, false);
+        if (properties && CFGetTypeID(properties) == CFDictionaryGetTypeID()) {
+            CFDictionaryRef dict = (CFDictionaryRef)properties;
+            CFStringRef name = CFDictionaryGetValue(dict, kMIDIPropertyName);
+            if (name && CFGetTypeID(name) == CFStringGetTypeID())
+                entityName = name;
+        }
+
+        char entity_name[128];
+        if (entityName) {
+            CFStringGetCString(entityName, entity_name, sizeof(entity_name), kCFStringEncodingUTF8);
+        } else {
+            snprintf(entity_name, sizeof(entity_name), "Source %08x", entityId);
+        }
+
+        struct midio_port *port = _add_port(me, entity_name, 0, entityId, 0);
+        port->input_endpoint_id = entityId;
+        port->inputEndpoint = sourceEndpoint;
+        port->inputPort = priv->inputPort;
+    }
+}
+
 MIDIO *midio_create(void)
 {
     struct midio_private *me = calloc(1, sizeof(*me));
@@ -396,7 +456,8 @@ void midio_open(MIDIO *me)
     // TODO: move these literals outside the module
     _add_virtual_output_port(me, "miditrick", 'MTRK');
 
-    _scan_for_pysical_ports(me);
+    _scan_for_physical_ports(me);
+    _scan_for_virtual_ports(me);
 
     for (int i = 0; i < priv->port_count; i++) {
         printf("device %d: name=%s\n", i, priv->ports[i].name);
